@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<launch>
+    <rosparam file="$(find opencv_final)/config/armor_params.yaml" command="load"/>
+    <!-- Armor Detection Node -->
+    <node pkg="opencv_final" type="getimg" name="armor_detection_node" output="screen"/>
+    <!-- 启动动态参数调节GUI -->
+    <!-- <node pkg="rqt_reconfigure" type="rqt_reconfigure" name="rqt_reconfigure" /> -->
+</launch>

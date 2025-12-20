@@ -1,0 +1,57 @@
+# armor_detection_node
+  # 颜色识别
+  enemy_color: 0  # 0:Red, 1:Blue, 2:test
+  
+  # 红色HSV
+  threshold/red:
+    hue_min: 0
+    hue_max: 10
+    sat_min: 100
+    sat_max: 255
+    val_min: 50
+    val_max: 255
+  
+  # 蓝色
+  threshold/blue:
+    hue_min: 100
+    hue_max: 130
+    sat_min: 100
+    sat_max: 255
+    val_min: 50
+    val_max: 255
+  
+  # 测试
+  threshold/test:
+    hue_min: 10
+    hue_max: 25
+    sat_min: 150
+    sat_max: 255
+    val_min: 180
+    val_max: 255
+  
+  # 灯条参数
+  light:
+    min_area: 50.0
+    max_ratio: 0.4
+    min_solidity: 0.7
+    min_height: 20.0
+  
+  # 配对参数
+  pair:
+    light_max_angle_diff: 15.0
+    light_max_height_diff_ratio: 0.5
+    light_max_y_diff_ratio: 0.3
+    light_min_x_diff_ratio: 0.5
+    armor_min_aspect_ratio: 0.5
+    armor_max_aspect_ratio: 4.8
+    armor_big_armor_ratio: 3.0
+    armor_small_armor_ratio: 2.0
+  
+  # 处理参数
+  preprocess:
+    brightness_thresh: 150
+  
+  # 形态学
+  morphology:
+    open_size: 3
+    close_size: 5
