@@ -12,6 +12,12 @@ find_package(catkin REQUIRED COMPONENTS
   image_transport
   roscpp
   sensor_msgs
+  rospy
+  dynamic_reconfigure
+)
+
+generate_dynamic_reconfigure_options(
+  cfg/armorDetect.cfg
 )
 
 find_package(OpenCV REQUIRED
@@ -114,7 +120,7 @@ find_package(OpenCV REQUIRED
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES opencv_final
-#  CATKIN_DEPENDS cv_bridge image_transport roscpp sensor_msgs
+   CATKIN_DEPENDS cv_bridge image_transport roscpp sensor_msgs rospy dynamic_reconfigure
 #  DEPENDS system_lib
 )
 
@@ -126,6 +132,8 @@ catkin_package(
 ## Your package locations should be listed before other locations
 include_directories(
   include
+  src
+  src/armorDetect
   ${catkin_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
 )
@@ -214,8 +222,18 @@ include_directories(
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
-add_executable(getimg src/getimg.cpp)
-target_link_libraries(getimg
+file(GLOB ARMOR_DETECT_SRCS
+  "src/armorDetect/*.cpp"
+)
+add_library(armor_detect_lib ${ARMOR_DETECT_SRCS})
+
+target_link_libraries(armor_detect_lib
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
+)
+add_executable(detectArmor src/detectArmor.cpp)
+target_link_libraries(detectArmor
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  armor_detect_lib
 )
