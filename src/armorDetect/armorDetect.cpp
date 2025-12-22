@@ -536,9 +536,9 @@ bool armor_detect::verifyArmorWithTemplate(const cv::Mat &frontImg, int armorTyp
     for (const auto &tpl : templates)
     {
         cv::Mat result;
-        matchTemplate(grayFront, tpl, result, cv::TM_CCOEFF_NORMED); // 使用归一化相关系数方法
+        cv::matchTemplate(grayFront, tpl, result, cv::TM_CCOEFF_NORMED);
         double minVal, maxVal;
-        minMaxLoc(result, &minVal, &maxVal);
+        cv::minMaxLoc(result, &minVal, &maxVal);
         maxScore = std::max(maxScore, maxVal);
     }
     // 判断阈值，例如大于阈值则认为匹配成功（有数字）
@@ -590,10 +590,8 @@ cv::Mat armor_detect::extractFrontImage(const cv::Mat &src, const LightDescripto
     // 注意：points() 输出的顶点顺序依赖于矩形的旋转角度，一个可靠的方法是：
     // 将顶点按 y 坐标排序，上方的两个点中 x 小的是左上，x 大的是右上。
     // 下方的两个点中 x 小的是左下，x 大的是右下。
-    // 但根据灯条近似垂直的特性，我们可以用更简单的方法：
     // 假设灯条是竖长的，那么对于左侧灯条，我们取它的 “右上”(idx: 1) 和 “右下”(idx: 2) 点作为装甲板的左边界。
     // 对于右侧灯条，我们取它的 “左上”(idx: 0) 和 “左下”(idx: 3) 点作为装甲板的右边界。
-    // 你需要根据你的 `adjustRect` 函数标准化后的结果，来确认正确的索引。
 
     cv::Point2f src_points[4]; // 源图像四边形
     cv::Point2f dst_points[4]; // 目标矩形
@@ -617,7 +615,7 @@ cv::Mat armor_detect::extractFrontImage(const cv::Mat &src, const LightDescripto
     cv::Mat front_img;
     cv::warpPerspective(src, front_img, perspective_matrix, cv::Size(width, height));
 
-    // 6. （可选但推荐）转换为灰度图，方便后续模板匹配
+    // 6. 转换为灰度图，方便后续模板匹配
     if (front_img.channels() == 3)
     {
         cv::cvtColor(front_img, front_img, cv::COLOR_BGR2GRAY);

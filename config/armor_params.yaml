@@ -66,9 +66,9 @@ draw_detect:
 # 标签为敌人颜色，不修改
 # WHITE=0 BLACK RED ORANGE YELLOW GREEN BULE PURPLE=7
 draw_color:
-  e_light: 0
-  e_rect: 1
-  e_l_center: 2
+  e_light: 7
+  e_rect: 5
+  e_l_center: 4
   e_r_center: 3
 
 
