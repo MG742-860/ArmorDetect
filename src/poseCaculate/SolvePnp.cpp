@@ -59,7 +59,7 @@ bool PoseCaculate::extractImagePoints(const opencv_final::ArmorInfo &armor,std::
     image_points.clear();
     
     // 从消息中提取4个顶点
-    // 注意：确保你的消息中顶点顺序是：左上->右上->右下->左下
+    // 点顺序是：左上->右上->右下->左下
     for (int i = 0; i < 4; ++i)
     {
         cv::Point2f point(armor.vertices_pixel[i].x,

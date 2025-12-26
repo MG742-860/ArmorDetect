@@ -14,6 +14,13 @@
 #include <message_filters/synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
 
+// TF2相关头文件
+#include <tf2_ros/transform_broadcaster.h>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2/LinearMath/Matrix3x3.h>
+#include <geometry_msgs/TransformStamped.h>
+#include <geometry_msgs/PoseStamped.h>
+
 #include <opencv_final/ArmorArray.h>
 #include <opencv_final/ArmorInfo.h>
 
@@ -25,6 +32,7 @@ private:
     ros::NodeHandle nh_;
     ros::Subscriber camera_info_sub_;
     ros::Subscriber armor_sub_;
+    ros::Publisher pose_pub_;
     
     // 相机参数
     cv::Mat camera_matrix_;
@@ -49,6 +57,13 @@ private:
     bool print_results_;
     double min_valid_distance_;
     double max_valid_distance_;
+
+    std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
+    bool publish_tf_;
+    bool publish_pose_messages_;
+    std::string parent_frame_id_;
+    std::string child_frame_prefix_;
+    double tf_cache_time_;
 public:
     // 构造函数 析构函数
     PoseCaculate(ros::NodeHandle &nh);
@@ -61,6 +76,9 @@ public:
     void generate3DPoints();
     // 获取对应装甲板类型的3D模型点
     std::vector<cv::Point3f> get3DObjectPoints(int armor_type);
+
+    // ====================================================================================
+
     // 装甲板消息处理
     void armorCallback(const opencv_final::ArmorArrayConstPtr &armor_msg);
     // PnP解算核心函数
@@ -75,6 +93,15 @@ public:
                                      const cv::Mat &rvec, const cv::Mat &tvec);
     // 结果输出 
     void printPoseResult(const cv::Mat &rvec, const cv::Mat &tvec, int armor_id, int armor_type); 
+
+    // ====================================================================================
+    
+    // 将旋转向量转换为四元数
+    tf2::Quaternion rvecToQuaternion(const cv::Mat &rvec);
+    // 发布TF变换
+    void publishTfTransform(const cv::Mat &rvec, const cv::Mat &tvec,const ros::Time &stamp, int armor_id, int armor_type);
+    // 发布Pose消息
+    void publishPoseMessage(const cv::Mat &rvec, const cv::Mat &tvec,const ros::Time &stamp, int armor_id, int armor_type);
 };
 
 #endif // POSE_CACULATE_HPP

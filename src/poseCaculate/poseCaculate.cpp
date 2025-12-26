@@ -9,11 +9,15 @@ PoseCaculate::PoseCaculate(ros::NodeHandle &nh) : nh_(nh)
     // 2. 订阅相机信息（单次）
     camera_info_sub_ = nh_.subscribe("/hk_camera/camera_info", 1, &PoseCaculate::cameraInfoCallback, this);
     // 3. 订阅装甲板检测结果
-    armor_sub_ = nh_.subscribe("/armor_detect/armors", 10, &PoseCaculate::armorCallback, this);
+    armor_sub_ = nh_.subscribe("/ArmorDetect/armors", 10, &PoseCaculate::armorCallback, this);
+    tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>();
+    pose_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("/armor_pose", 10);
     // 4. 生成3D模型点
     generate3DPoints();
     ROS_INFO("PoseCaculate initialized successfully");
     ROS_INFO("Waiting for camera info...");
+    // =============
+
 }
 
 void PoseCaculate::loadParameters()
@@ -21,20 +25,29 @@ void PoseCaculate::loadParameters()
     ROS_INFO("Loading parameters from ROS parameter server...");
     
     // 装甲板物理尺寸（单位：米）
-    nh_.param("small_armor_width", small_armor_width_, 0.230);
-    nh_.param("small_armor_height", small_armor_height_, 0.127);
-    nh_.param("big_armor_width", big_armor_width_, 0.330);
-    nh_.param("big_armor_height", big_armor_height_, 0.127);
-    
+    small_armor_width_ = nh_.param("small_armor_width", 0.230);
+    small_armor_height_ = nh_.param("small_armor_height", 0.127);
+    big_armor_width_ = nh_.param("big_armor_width", 0.330);
+    big_armor_height_ = nh_.param("big_armor_height", 0.127);
+
     // PnP解算方法
-    nh_.param("pnp_method", pnp_method_, 1/*cv::SOLVEPNP_EPNP*/);
+    pnp_method_ = nh_.param("pnp_method", 1/*cv::SOLVEPNP_EPNP*/);
     
     // 调试选项
-    nh_.param("debug_mode", debug_mode_, false);
-    nh_.param("print_results", print_results_, true);
-    nh_.param("min_valid_distance", min_valid_distance_, 0.3);
-    nh_.param("max_valid_distance", max_valid_distance_, 10.0);
+    debug_mode_ = nh_.param("debug_mode", false);
+    print_results_ = nh_.param("print_results", true);
+    min_valid_distance_ = nh_.param("min_valid_distance", 0.2);
+    max_valid_distance_ = nh_.param("max_valid_distance", 10.0);
     
+    // TF发布配置
+    nh_.param("publish_tf", publish_tf_, true);
+    nh_.param("publish_pose_messages", publish_pose_messages_, true);
+    nh_.param("parent_frame_id", parent_frame_id_, std::string("camera_optical_frame"));
+    nh_.param("child_frame_prefix", child_frame_prefix_, std::string("armor_"));
+    // TF过期时间（秒）
+    nh_.param("tf_cache_time", tf_cache_time_, 0.1);
+
+
     ROS_INFO("Armor dimensions loaded:");
     ROS_INFO("  Small: %.3f x %.3f m", small_armor_width_, small_armor_height_);
     ROS_INFO("  Big: %.3f x %.3f m", big_armor_width_, big_armor_height_);
@@ -178,7 +191,17 @@ void PoseCaculate::armorCallback(const opencv_final::ArmorArrayConstPtr &armor_m
             {
                 printPoseResult(rvec, tvec, armor.armor_id, armor.armor_type);
             }
+            // 【关键修复】发布TF变换
+            if (publish_tf_ && tf_broadcaster_) {
+                publishTfTransform(rvec, tvec, armor_msg->header.stamp, 
+                                  armor.armor_id, armor.armor_type);
+            }
             
+            // 【关键修复】发布姿态消息
+            if (publish_pose_messages_) {
+                publishPoseMessage(rvec, tvec, armor_msg->header.stamp, 
+                                  armor.armor_id, armor.armor_type);
+            }
             // 这里可以存储结果或进行后续处理
             // 例如：存储到容器中供其他函数使用
         }

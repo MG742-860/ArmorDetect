@@ -1,0 +1,116 @@
+acermg@acermg-QNLXS:~$ rosnode list
+/caculatePose_node
+/detectArmor_node
+/rosout
+/rqt_gui_cpp_node_18419
+/rqt_gui_py_node_18419
+/rviz_1766745573890668083
+acermg@acermg-QNLXS:~$ rostopic list 
+/ArmorDetect/armors
+/ArmorDetect/binary_image
+/ArmorDetect/binary_image/compressed
+/ArmorDetect/binary_image/compressed/parameter_descriptions
+/ArmorDetect/binary_image/compressed/parameter_updates
+/ArmorDetect/binary_image/compressedDepth
+/ArmorDetect/binary_image/compressedDepth/parameter_descriptions
+/ArmorDetect/binary_image/compressedDepth/parameter_updates
+/ArmorDetect/binary_image/theora
+/ArmorDetect/binary_image/theora/parameter_descriptions
+/ArmorDetect/binary_image/theora/parameter_updates
+/ArmorDetection/result_image
+/ArmorDetection/result_image/compressed
+/ArmorDetection/result_image/compressed/parameter_descriptions
+/ArmorDetection/result_image/compressed/parameter_updates
+/ArmorDetection/result_image/compressedDepth
+/ArmorDetection/result_image/compressedDepth/parameter_descriptions
+/ArmorDetection/result_image/compressedDepth/parameter_updates
+/ArmorDetection/result_image/theora
+/ArmorDetection/result_image/theora/parameter_descriptions
+/ArmorDetection/result_image/theora/parameter_updates
+/ArmorDetection/result_image_mouse_left
+/armor_detect/armors
+/clicked_point
+/clock
+/detectArmor_node/compressed/parameter_descriptions
+/detectArmor_node/compressed/parameter_updates
+/detectArmor_node/parameter_descriptions
+/detectArmor_node/parameter_updates
+/hk_camera/camera_info
+/hk_camera/image_raw/compressed
+/initialpose
+/move_base_simple/goal
+/rosout
+/rosout_agg
+/tf
+/tf_static
+相机参数：
+---
+header: 
+  seq: 44764
+  stamp: 
+    secs: 1765250271
+    nsecs: 467524271
+  frame_id: "camera_optical_frame"
+height: 1080
+width: 1440
+distortion_model: "plumb_bob"
+D: [-0.088212, 0.126281, 0.001009, 0.000537, 0.0]
+K: [1799.27051, 0.0, 762.07836, 0.0, 1799.48087, 563.68559, 0.0, 0.0, 1.0]
+R: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+P: [1777.86914, 0.0, 762.68725, 0.0, 0.0, 1784.91101, 563.95249, 0.0, 0.0, 0.0, 1.0, 0.0]
+binning_x: 0
+binning_y: 0
+roi: 
+  x_offset: 0
+  y_offset: 0
+  height: 0
+  width: 0
+  do_rectify: False
+^[[A^[[B^Cacermg@acermg-QNLXS:~$ rostopic echo /ArmorDetect/armors -n 1
+header: 
+  seq: 1319
+  stamp: 
+    secs: 1766746362
+    nsecs: 668267753
+  frame_id: "camera_optical_frame"
+armors: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 1766746362
+        nsecs: 668268825
+      frame_id: "camera_optical_frame"
+    armor_type: 0
+    vertices_pixel: 
+      - 
+        x: 863.227783203125
+        y: 558.076416015625
+        z: 0.0
+      - 
+        x: 951.3799438476562
+        y: 600.3399658203125
+        z: 0.0
+      - 
+        x: 964.5399780273438
+        y: 602.219970703125
+        z: 0.0
+      - 
+        x: 870.56005859375
+        y: 559.2496337890625
+        z: 0.0
+    left_light_center: 
+      x: 863.3369750976562
+      y: 580.8939208984375
+      z: 0.0
+    right_light_center: 
+      x: 961.449951171875
+      y: 576.8499755859375
+      z: 0.0
+    rect_x: 856
+    rect_y: 551
+    rect_width: 117
+    rect_height: 54
+    armor_id: 0
+---
+
