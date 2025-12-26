@@ -1,5 +1,6 @@
 # 颜色识别
 enemy_color: 0  # 0:Red, 1:Blue, 2:test
+enemy_type: 0 # 0:small 1:big 2:all
 
 # 红色HSV
 threshold/red:

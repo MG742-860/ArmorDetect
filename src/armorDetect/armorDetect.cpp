@@ -1,21 +1,22 @@
 #include "../../include/armorDetect/armorDetect.hpp"
 #include <ros/package.h>
 
-armor_detect::armor_detect(ros::NodeHandle &nh) : nh_(nh), it_(nh)
+ArmorDetect::ArmorDetect(ros::NodeHandle &nh) : nh_(nh), it_(nh)
 {
     image_transport::TransportHints hints("compressed");
-    cam_sub_ = it_.subscribeCamera("/hk_camera/image_raw", 10, &armor_detect::imageCallback, this, hints);
-    pub_binary_image_ = it_.advertise("/armor_detect/binary_image", 1);
-    pub_result_image_ = it_.advertise("/armor_detection/result_image", 1);
+    cam_raw_sub_ = it_.subscribeCamera("/hk_camera/image_raw", 10, &ArmorDetect::imageCallback, this, hints);
+    pub_binary_image_ = it_.advertise("/ArmorDetect/binary_image", 1);
+    pub_result_image_ = it_.advertise("/ArmorDetection/result_image", 1);
+    armor_pub_ = nh_.advertise<opencv_final::ArmorArray>("/ArmorDetect/armors", 10);
     // 初始化动态参数服务器
-    dyn_callback_ = boost::bind(&armor_detect::dynamicReconfigureCallback, this, _1, _2);
+    dyn_callback_ = boost::bind(&ArmorDetect::dynamicReconfigureCallback, this, _1, _2);
     dyn_server_.setCallback(dyn_callback_);
 
     initParams();
     loadTemplates();
 }
 
-void armor_detect::initParams()
+void ArmorDetect::initParams()
 {
     // 红色阈值
     red_thresh_.hue_min = nh_.param("threshold/red/hue_min", 0);
@@ -33,8 +34,9 @@ void armor_detect::initParams()
     blue_thresh_.val_min = nh_.param("threshold/blue/val_min", 50);
     blue_thresh_.val_max = nh_.param("threshold/blue/val_max", 255);
 
-    // 敌方颜色
+    // 敌方颜色、装甲板
     enemy_color_ = nh_.param("enemy_color", 0);
+    enemy_type_ = nh_.param("enemy_type", 0);
 
     // 灯条参数
     light_params_.min_area = nh_.param("light/min_area", 50.0);
@@ -77,7 +79,7 @@ void armor_detect::initParams()
     draw_detect_.e_r_center_c = getDrawColor("draw_color/e_r_center", red);
 }
 
-cv::Scalar armor_detect::colorEnumToScalar(int color_enum)
+cv::Scalar ArmorDetect::colorEnumToScalar(int color_enum)
 {
     switch (color_enum)
     {
@@ -102,14 +104,14 @@ cv::Scalar armor_detect::colorEnumToScalar(int color_enum)
     }
 }
 
-cv::Scalar armor_detect::getDrawColor(std::string dst, int default_color)
+cv::Scalar ArmorDetect::getDrawColor(std::string dst, int default_color)
 {
     int c = default_color;
     c = nh_.param(dst, default_color);
     return colorEnumToScalar(c);
 }
 
-std::string armor_detect::getColorName(int color_id)
+std::string ArmorDetect::getColorName(int color_id)
 {
     switch (color_id)
     {
@@ -122,7 +124,7 @@ std::string armor_detect::getColorName(int color_id)
     }
 }
 
-void armor_detect::imageCallback(const sensor_msgs::ImageConstPtr &img_msg, const sensor_msgs::CameraInfoConstPtr &info_msg)
+void ArmorDetect::imageCallback(const sensor_msgs::ImageConstPtr &img_msg, const sensor_msgs::CameraInfoConstPtr &info_msg)
 {
     cv::Mat image;
     // 1、图片格式转化
@@ -132,9 +134,10 @@ void armor_detect::imageCallback(const sensor_msgs::ImageConstPtr &img_msg, cons
         return;
     }
 
-    // 2、检测装甲板
+    // 2、检测、发布装甲板
     std::vector<ArmorDescriptor> detected_armors = detectArmor(image);
-
+    pubArmorVertices(detected_armors);
+    
     // 3、绘制检测结果
     cv::Mat result_image = image.clone();
     drawDetections(result_image, detected_armors);
@@ -154,7 +157,7 @@ void armor_detect::imageCallback(const sensor_msgs::ImageConstPtr &img_msg, cons
     pub_binary_image_.publish(binary_msg);
 }
 
-bool armor_detect::convertImage(const sensor_msgs::ImageConstPtr &img_msg, cv::Mat &output_image)
+bool ArmorDetect::convertImage(const sensor_msgs::ImageConstPtr &img_msg, cv::Mat &output_image)
 {
     try
     {
@@ -199,7 +202,7 @@ bool armor_detect::convertImage(const sensor_msgs::ImageConstPtr &img_msg, cv::M
     }
 }
 
-cv::Mat armor_detect::colorSegmentation(const cv::Mat &hsv_image)
+cv::Mat ArmorDetect::colorSegmentation(const cv::Mat &hsv_image)
 {
     cv::Mat mask;
     if (enemy_color_ == 0)
@@ -238,7 +241,7 @@ cv::Mat armor_detect::colorSegmentation(const cv::Mat &hsv_image)
     }
     return mask;
 }
-std::vector<armor_detect::ArmorDescriptor> armor_detect::detectArmor(const cv::Mat &image)
+std::vector<ArmorDetect::ArmorDescriptor> ArmorDetect::detectArmor(const cv::Mat &image)
 {
     std::vector<ArmorDescriptor> final_armors;
     std::vector<LightDescriptor> light_infos;
@@ -333,7 +336,12 @@ std::vector<armor_detect::ArmorDescriptor> armor_detect::detectArmor(const cv::M
             // if(!verifyArmorWithTemplate(frontImg, armor_type)) continue;
             // ==========================================================================
             // 添加到候选列表
-            candidate_armors.push_back(ArmorDescriptor(left_light, right_light, armor_type));
+            if(armor_type == enemy_type_ || enemy_type_ == 2)
+            {
+                ArmorDescriptor armor(left_light, right_light, armor_type);
+                armor.vertices = getArmorVertices(left_light, right_light, armor_type);
+                candidate_armors.push_back(armor);
+            }
         }
     }
     // 2. 然后，对候选装甲板进行后续验证（如数字识别）
@@ -350,7 +358,7 @@ std::vector<armor_detect::ArmorDescriptor> armor_detect::detectArmor(const cv::M
     return final_armors;
 }
 
-void armor_detect::drawDetections(cv::Mat &image, const std::vector<ArmorDescriptor> &armors)
+void ArmorDetect::drawDetections(cv::Mat &image, const std::vector<ArmorDescriptor> &armors)
 {
     cv::Scalar text_color;
     if (enemy_color_ == 0)
@@ -412,7 +420,7 @@ void armor_detect::drawDetections(cv::Mat &image, const std::vector<ArmorDescrip
                 cv::FONT_HERSHEY_SIMPLEX, 0.8, text_color, 2);
 }
 
-void armor_detect::adjustRect(cv::RotatedRect &rect)
+void ArmorDetect::adjustRect(cv::RotatedRect &rect)
 {
     // 确保宽度是较小的边（灯条宽度）
     if (rect.size.width > rect.size.height)
@@ -429,7 +437,7 @@ void armor_detect::adjustRect(cv::RotatedRect &rect)
 }
 
 // ============================================================
-void armor_detect::loadTemplates()
+void ArmorDetect::loadTemplates()
 {
     smallArmorTemplates.clear();
     bigArmorTemplates.clear();
@@ -499,7 +507,7 @@ void armor_detect::loadTemplates()
     }
 }
 
-bool armor_detect::verifyArmorWithTemplate(const cv::Mat &frontImg, int armorType)
+bool ArmorDetect::verifyArmorWithTemplate(const cv::Mat &frontImg, int armorType)
 {
     const std::vector<cv::Mat> &templates = (armorType == 0) ? smallArmorTemplates : bigArmorTemplates;
     double maxScore = 0;
@@ -545,7 +553,7 @@ bool armor_detect::verifyArmorWithTemplate(const cv::Mat &frontImg, int armorTyp
     return maxScore > digit_resize_.threshold;
 }
 
-cv::Mat armor_detect::extractFrontImage(const cv::Mat &src, const LightDescriptor &left_light, const LightDescriptor &right_light, int armor_type)
+cv::Mat ArmorDetect::extractFrontImage(const cv::Mat &src, const LightDescriptor &left_light, const LightDescriptor &right_light, int armor_type)
 {
     // 检查输入图像
     if (src.empty())

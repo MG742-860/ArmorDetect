@@ -15,7 +15,7 @@ int main(int argc, char** argv)
     ROS_INFO("Starting Armor Detector Node");
     ROS_INFO("check at rqt: result_image/binary_image");
     
-    armor_detect node(nh);
+    ArmorDetect node(nh);
     
     ros::spin();
     

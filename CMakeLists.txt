@@ -8,16 +8,36 @@ project(opencv_final)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  cv_bridge
-  image_transport
   roscpp
-  sensor_msgs
   rospy
+  std_msgs
+  sensor_msgs
+  geometry_msgs
+  image_transport
+  cv_bridge
   dynamic_reconfigure
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
+  message_generation
+  message_filters
 )
 
 generate_dynamic_reconfigure_options(
   cfg/armorDetect.cfg
+)
+
+add_message_files(
+  FILES
+  ArmorInfo.msg
+  ArmorArray.msg
+)
+
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+  geometry_msgs
+  sensor_msgs
 )
 
 find_package(OpenCV REQUIRED
@@ -120,7 +140,18 @@ find_package(OpenCV REQUIRED
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES opencv_final
-   CATKIN_DEPENDS cv_bridge image_transport roscpp sensor_msgs rospy dynamic_reconfigure
+  CATKIN_DEPENDS 
+  roscpp 
+  rospy 
+  std_msgs 
+  sensor_msgs 
+  geometry_msgs 
+  image_transport 
+  cv_bridge 
+  dynamic_reconfigure
+  tf2
+  tf2_ros
+  message_runtime
 #  DEPENDS system_lib
 )
 
@@ -134,8 +165,10 @@ include_directories(
   include
   src
   src/armorDetect
+  src/poseCaculate
   ${catkin_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
@@ -231,9 +264,26 @@ target_link_libraries(armor_detect_lib
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
 )
-add_executable(detectArmor src/detectArmor.cpp)
-target_link_libraries(detectArmor
+add_executable(detectArmor_node src/detectArmor_node.cpp)
+target_link_libraries(detectArmor_node
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
   armor_detect_lib
+)
+
+
+file(GLOB POSE_CACULATE_SRCS
+  "src/poseCaculate/*.cpp"
+)
+add_library(pose_caculate_lib ${POSE_CACULATE_SRCS})
+
+target_link_libraries(pose_caculate_lib
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+)
+add_executable(caculatePose_node src/caculatePose_node.cpp)
+target_link_libraries(caculatePose_node
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  pose_caculate_lib
 )

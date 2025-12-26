@@ -1,8 +1,16 @@
 <?xml version="1.0"?>
 <launch>
     <rosparam file="$(find opencv_final)/config/armor_params.yaml" command="load"/>
-    <!-- Armor Detection Node -->
-    <node pkg="opencv_final" type="detectArmor" name="armor_detection_node" output="screen"/>
+    <!-- 装甲板检测节点 -->
+    <node pkg="opencv_final" type="detectArmor_node" name="detectArmor_node" output="screen"/>
+    <!-- 位姿解算节点 -->
+    <node pkg="opencv_final" type="caculatePose_node" name="caculatePose_node" output="screen">
+        <!-- 装甲板实际尺寸参数 -->
+        <param name="small_armor_width" type="double" value="0.135" />
+        <param name="small_armor_height" type="double" value="0.055" />
+        <param name="big_armor_width" type="double" value="0.225" />
+        <param name="big_armor_height" type="double" value="0.055" />
+    </node>
     <!-- 启动动态参数调节GUI -->
     <!-- <node pkg="rqt_reconfigure" type="rqt_reconfigure" name="rqt_reconfigure" /> -->
 </launch>

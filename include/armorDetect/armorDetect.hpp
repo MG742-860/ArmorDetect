@@ -8,8 +8,8 @@
 #define BULE 255,0,0
 #define PURPLE 231,0,104
 
-#ifndef _GET_IMAGE_
-#define _GET_IMAGE_
+#ifndef _ARMOR_DETECT_
+#define _ARMOR_DETECT_
 #include <ros/ros.h>
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
@@ -17,18 +17,20 @@
 #include <sensor_msgs/CameraInfo.h>
 #include <opencv2/opencv.hpp>
 #include <dirent.h>
-
 #include <dynamic_reconfigure/server.h>
-#include "../../../../devel/include/opencv_final/armorDetectConfig.h"
+#include <opencv_final/armorDetectConfig.h>
+#include <opencv_final/ArmorArray.h>
+#include <opencv_final/ArmorInfo.h>
 
-class armor_detect
+class ArmorDetect
 {
 private:
     ros::NodeHandle nh_;
     image_transport::ImageTransport it_;// 订阅图像话题
-    image_transport::CameraSubscriber cam_sub_;
+    image_transport::CameraSubscriber cam_raw_sub_;// 订阅相机图像和信息
     image_transport::Publisher pub_binary_image_;// 发布二值化图像
     image_transport::Publisher pub_result_image_;// 发布绘制结果的图像
+    ros::Publisher armor_pub_;// 装甲板发布器
     /* image_transport：
         这个样子发布后还有附加很多子话题：compressed、theora、compressedDepth
         不用管，这是 image_transport 自动创建的，每个子话题里面的内容是不同形式的图片信息
@@ -42,6 +44,7 @@ private:
         int val_min, val_max;
     } red_thresh_, blue_thresh_;
     int enemy_color_;// 要识别的颜色 0-红色  1-蓝色
+    int enemy_type_;// 要识别的装甲板大小 0-small 1-big 2-all
 
     // 预处理参数
     int brightness_thresh;
@@ -86,6 +89,7 @@ private:
         LightDescriptor right_light;
         cv::Rect bounding_rect;
         int type; // 0-小装甲板  1-大装甲板
+        std::vector<cv::Point2f> vertices;// 四个顶点
         ArmorDescriptor(const LightDescriptor& l, const LightDescriptor& r, int armor_type) 
             : left_light(l), right_light(r), type(armor_type) {
             cv::Rect left_rect = l.rect.boundingRect();
@@ -129,9 +133,9 @@ private:
 
 
 public:
-    armor_detect() = default;
-    armor_detect(ros::NodeHandle& nh);
-    ~armor_detect() = default;
+    ArmorDetect() = default;
+    ArmorDetect(ros::NodeHandle& nh);
+    ~ArmorDetect() = default;
     // 获取参数
     void initParams();
     cv::Scalar getDrawColor(std::string dst, int default_color);
@@ -158,6 +162,10 @@ public:
     // 动态参数
     cv::Scalar colorEnumToScalar(int color_enum);
     void dynamicReconfigureCallback(opencv_final::armorDetectConfig &config, uint32_t level);
+    
+    // 获取顶点、发布
+    std::vector<cv::Point2f> getArmorVertices(const LightDescriptor& left_light, const LightDescriptor& right_light,int armor_type);
+    void pubArmorVertices(std::vector<ArmorDescriptor> detected_armors);
 };
 
 #endif

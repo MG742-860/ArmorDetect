@@ -3,13 +3,14 @@
 
 
 // 动态参数回调函数实现
-void armor_detect::dynamicReconfigureCallback(opencv_final::armorDetectConfig &config, uint32_t level)
+void ArmorDetect::dynamicReconfigureCallback(opencv_final::armorDetectConfig &config, uint32_t level)
 {
     ROS_INFO("[Dynamic Reconfigure] Updating parameters...");
     
     // 更新敌方颜色
     enemy_color_ = config.enemy_color;
-    
+    enemy_type_ = config.enemy_type;
+
     // 更新红色阈值
     red_thresh_.hue_min = config.red_hue_min;
     red_thresh_.hue_max = config.red_hue_max;
